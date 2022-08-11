@@ -1,0 +1,57 @@
+---
+title: "COVID vaccin"
+author: "FIANKO Kossi"
+date: "02/05/2021"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r warning=TRUE}
+# Représentation graphique de Cumul doses injectées
+#library(tidyverse)
+
+library(readr)
+library(RCurl)
+library(dplyr)
+install.packages(contrib.url)
+
+## Umportation et traitement des données
+URL <- getURL("https://www.data.gouv.fr/fr/datasets/r/900da9b0-8987-4ba7-b117-7aea0e53f530")
+URLcsv<-URL%>%paste(collapse = "") %>% stringr::str_extract("href=.*?csv")%>%gsub("href=\"","",.)
+URL<-getURL(URLcsv)
+
+data1 <- read.csv(text = URL, check.names = F,stringsAsFactors = F, sep=";")
+data1$jour <- as.Date(data1$jour)
+
+library(dplyr, warn.conflicts = FALSE)
+# Suppress summarise info
+options(dplyr.summarise.inform = FALSE)
+d <- data1 %>%group_by(jour, vaccin)%>%summarise(somme = sum(n_cum_dose1))
+
+d$jour <- as.Date(d$jour, breaks = "months")
+```
+
+
+
+```{r warning=TRUE}
+#Fonction de  la representation  
+library(ggplot2)
+# Charger
+library(wesanderson)
+
+ggplot(d, aes(jour,somme,color = vaccin)) +
+  geom_point(aes(jour,somme,color = vaccin)) + labs(title = "Cumul doses injectées") + theme(plot.title = element_text(hjust = 0.5, size = 15))
+
+
+
+plot(d$jour,d$somme, col = d$vaccin)
+
+# 0 : Tous vaccins
+# 1 : COMIRNATY Pfizer/BioNTech
+# 2 : Moderna
+# 3 : AstraZeneka
+# 4 : Janssen
+```
+
+

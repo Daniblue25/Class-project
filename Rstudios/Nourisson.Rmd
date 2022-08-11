@@ -1,0 +1,105 @@
+---
+title: "Cause de la mort des nourissons"
+author: "FIANKO Kossi"
+date: "13/11/2021"
+output: html_document
+---
+
+# Données  des nourissons
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Importation des données
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+sit <- "https://www.dropbox.com/s/cdibrnhrkheyo5s/vlwb.csv?dl=1"
+dd <- read.csv(sit, header = T, sep = ";", dec = ".")
+```
+
+
+```{r}
+# le nombre de nourrisson presentant un ivh
+
+table(dd$ivh)
+df <- dd %>% filter(ivh == "definite" | ivh == "possible")
+a = nrow(df)
+print("le nombre est : " )
+print(a)
+
+# la proportion que cela represente
+b = a/( 442+75+10 )*100
+print("la proportion est :")
+print(b)
+```
+
+
+##  Comparaison les caractéristiques des nourrissons et/ou de leur maman en fonction de la présence ou non d'une IVH
+```{r}
+# Presentation d'un tableau comparatif
+## reformulation du data selon les variables selectionnées pour étude
+
+bm <- dd %>% select(ivh,bwt, gest, twn, sex, race, meth, toc, lol,delivery, apg1, apg5, vent, dead) #%>% na.omit()
+bm$sex <- factor(bm$sex, levels = c("female", "FEMALE", "male", "Male", "MALE"),
+                 labels = c("Female", "Female", "Male", "Male","Male"))
+
+bm$ivh <- factor(bm$ivh, levels = c("absent" ,"definite" ,"possible"),
+                 labels = c("absent", "present", "present"))
+
+library(tableone)
+library(survival)
+var = c("bwt", "gest", "twn", "sex", "race", "meth", "toc", "lol","delivery", "apg1", "apg5", "vent", "dead")
+fact = c("sex", "race","delivery")
+tb1 <- CreateTableOne(vars = var, strata = "ivh", data = bm, factorVars = fact)
+tb1
+
+```
+
+```{r}
+# Representation avec gtsummary
+library(gtsummary)
+library(flextable)
+
+bm <- na.omit(bm)
+tg <- bm %>% tbl_summary(by = ivh,
+                        statistic = list(all_continuous()~"{mean} ({sd}) [{sum}]",
+                                         all_categorical() ~ "{n} / {N} ({p}%)"),
+                        digits = all_continuous() ~ 2) %>% add_p() %>% 
+  add_n() %>% modify_header(label ~ "**Variable**") %>%
+  modify_spanning_header(c("stat_1", "stat_2") ~"**IVH**") %>%
+  modify_caption("**Table: Tableau comparatif**") %>% bold_labels()
+tg
+
+```
+
+
+```{r}
+library(ggplot2)
+ ggplot(bm, aes(x= race, y=bwt, fill= sex  )) + geom_boxplot()+
+   geom_jitter(alpha = 0.2, size = 2, width = 0.1, height = 0)+
+  stat_summary(fun = mean, shape = 13, size = 1, colour = "red")
+
+```
+
+```{r}
+ggplot(bm, aes(x= race, fill= sex)) +
+  geom_bar( position = "dodge") + labs(title = "Repartion des races suivant le sexe")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
